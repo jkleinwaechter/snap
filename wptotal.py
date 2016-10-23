@@ -14,11 +14,11 @@
 
 import requests
 import logging
+import os.path
 from base64 import b64encode
 from pprint import pformat
 from json import dumps, loads
 from time import localtime, strftime
-
 from wpexceptions import WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpHTTPError, WpInvalidEndpointError
 
 log = logging.getLogger(__name__)  # this allows the name of the current module to be placed in the log entry
@@ -28,28 +28,28 @@ class WPTotal:
     '''This class contains the constants and methods that affect the entire application'''
 
     # Constants
-    host = "DEMO" # Determines the environment endpoint. Options are "DEMO" or "IPC"
-    merchantId = '8006912'  # Change to your personal id as provided in your enrollemnt email
-    merchantKey = 'cQxbjK2bCDfp'  # Change to your key procided by Virtual Terminal
+    merchantId = ''  # Change to your personal id as provided in your enrollemnt email
+    merchantKey = ''  # Change to your key procided by Virtual Terminal
+    publicKey = ''  # Fill in with your publicKey as shown in Virtual TerminaldevId = 12345678  # Not sure where this comes from - totally fictional at this time
+    host = "DEMO"  # Determines the environment endpoint. Options are "DEMO" or "IPC"
     devId = 12345678  # Not sure where this comes from - totally fictional at this time
     appVersion = '0.1'  # internal
     httpProxy = 'http://10.1.1.91'  # Change to your HTTP proxy - Only used if -p option at cmdline
     httpsProxy = 'https://10.1.1.91'  # Change to your HTTPS proxy - Only used if -p option at cmdline
     timeout = 20  # Timeout for all http calls
     logFileName = 'log.txt'  # Where to send the log entries
-    errorLogDirectory = "errorlogs"  # subdirectory to place error logs in
-    publicKey = '5ad6c3eb-c93f-4d3e-8cb1-0aa847e079e5'
-    testDataFileName = "testdata.csv"
+    credentialsFile = 'me.local'  # If this file exists, read credentials for merchantId, merchantKey, and publicKey
+    errorLogDirectory = 'errorlogs'  # subdirectory to place error logs in
+    testDataFileName = 'testdata.csv'
     doubleSecretProbation = None  # This is a file that is opened for special debugging behaviors. set on the command line. Not for general consumption
-    hostPrefix = { 
-            "DEMO": "https://gwapi.demo.securenet.com/api/Payments/", 
-            "IPC" : "localhost:8081/api/Payments/"
-            }
+    hostPrefix = {
+        "DEMO": "https://gwapi.demo.securenet.com/api/Payments/",
+        "IPC": "localhost:8081/api/Payments/"
+    }
     integrationType = {
         "DEMO": 0,
         "IPC": 1
-        }
-
+    }
 
     # Class variables
     proxies = {}  # this will either be nil or the proxy depending on -p option
@@ -58,12 +58,16 @@ class WPTotal:
 
     # Class methods
     def __init__(self):
+        if (os.path.exists(self.credentialsFile)):
+            with open(self.credentialsFile, 'rU') as f:
+                self.merchantId = f.readline()[:-1]
+                self.merchantKey = f.readline()[:-1]
+                self.publicKey = f.readline()[:-1]
+
         authId = "Basic " + b64encode(self.merchantId + ":" + self.merchantKey)
         self.httpHeader = {'Authorization': authId, 'Content-Type': 'application/json', 'Accept': 'application/json', 'Origin': 'worldpay.com'}
         self.devAppId = {'developerId': self.devId, 'version': self.appVersion, 'integrationType': self.integrationType.get(self.host)}
-
         log.debug("HTTP header: %s", pformat(self.httpHeader, indent=1))
-
         return
 
     def enableProxies(self):
