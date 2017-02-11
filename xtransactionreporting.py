@@ -14,7 +14,7 @@ import logging
 from pprint import pformat
 
 from wptotal import wpTransact
-from wpauthobjects import LevelTwoData
+# from wpauthobjects import LevelTwoData
 from wptransactionreportingobjects import SearchTransactionsRequest, UpdateTransactionRequest
 from wpresponseobjects import TransactionReportingResponseParameters
 from wpexceptions import WpBadResponseError
@@ -35,8 +35,15 @@ def doSearchTransactions():
 
     # 1. Fill in the Request Object
     st = SearchTransactionsRequest()
-    st.startDate = "9/8/2016"
-    st.endDate = "9/9/2016"
+    # Seach to last 30 days.
+    stop = datetime.date.today()
+    oneMonth = datetime.timedelta(days=30)
+    start = stop - oneMonth
+
+    st.startDate = str(start.month) + "/" + str(start.day) + "/" + str(start.year)
+    st.endDate = str(stop.month) + "/" + str(stop.day) + "/" + str(stop.year)
+
+    log.info("Seach range: %s - %s", st.startDate, st.endDate)
 
     # 2. Send the transaction on a serialized Request Object
     try:

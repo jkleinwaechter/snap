@@ -19,7 +19,7 @@ from base64 import b64encode
 from pprint import pformat
 from json import dumps, loads
 from time import localtime, strftime
-from wpexceptions import WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpHTTPError, WpInvalidEndpointError
+from wpexceptions import WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpHTTPError, WpInvalidEndpointError, WpConfigurationError
 
 log = logging.getLogger(__name__)  # this allows the name of the current module to be placed in the log entry
 
@@ -28,11 +28,13 @@ class WPTotal:
     '''This class contains the constants and methods that affect the entire application'''
 
     # Constants
-    merchantId = ''  # Change to your personal id as provided in your enrollemnt email
-    merchantKey = ''  # Change to your key procided by Virtual Terminal
-    publicKey = ''  # Fill in with your publicKey as shown in Virtual TerminaldevId = 12345678  # Not sure where this comes from - totally fictional at this time
+    merchantId = ''  # Change to your personal id as provided in your enrollemnt email. This can also be overrideen as the first line in credentialsFile
+    merchantKey = ''  # Change to your key procided by Virtual Terminal. This can also be overrideen as the second line in credentialsFile
+    publicKey = ''  # Fill in with your publicKey as shown in Virtual Terminal. This can also be overrideen as the third line in credentialsFile
+    devId = 12345678  # Not sure where this comes from - totally fictional at this time
     host = "DEMO"  # Determines the environment endpoint. Options are "DEMO" or "IPC"
     devId = 12345678  # Not sure where this comes from - totally fictional at this time
+    defaultTerminalId = "87654321"
     appVersion = '0.1'  # internal
     httpProxy = 'http://10.1.1.91'  # Change to your HTTP proxy - Only used if -p option at cmdline
     httpsProxy = 'https://10.1.1.91'  # Change to your HTTPS proxy - Only used if -p option at cmdline
@@ -58,6 +60,10 @@ class WPTotal:
 
     # Class methods
     def __init__(self):
+        # Credentials can either be set in the constants section above or in the file specified in the file set in credentialsFile
+        # preference is given to the credentialsFile
+        # note: you cannot use log statements here yet as the log object is not yet created.
+        # We'll log the data in the validateConfiguration method instead.
         if (os.path.exists(self.credentialsFile)):
             with open(self.credentialsFile, 'rU') as f:
                 self.merchantId = f.readline()[:-1]
@@ -67,7 +73,7 @@ class WPTotal:
         authId = "Basic " + b64encode(self.merchantId + ":" + self.merchantKey)
         self.httpHeader = {'Authorization': authId, 'Content-Type': 'application/json', 'Accept': 'application/json', 'Origin': 'worldpay.com'}
         self.devAppId = {'developerId': self.devId, 'version': self.appVersion, 'integrationType': self.integrationType.get(self.host)}
-        log.debug("HTTP header: %s", pformat(self.httpHeader, indent=1))
+
         return
 
     def enableProxies(self):
@@ -79,6 +85,18 @@ class WPTotal:
 
     def disableProxies(self):
         self.proxies = {}
+        return
+
+    def validateConfiguration(self):
+        if not self.merchantId:
+            raise WpConfigurationError("merchantId not set")
+        elif not self.merchantKey:
+            raise WpConfigurationError("merchantKey not set")
+        elif not self.publicKey:
+            raise WpConfigurationError("publicKey not set")
+
+        log.debug("merchantId:%s merchantKey:%s publicKey:%s", self.merchantId, self.merchantKey, self.publicKey)
+        log.debug("HTTP header used for this session:\n%s", pformat(self.httpHeader, indent=1))
         return
 
 

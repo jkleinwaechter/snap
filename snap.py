@@ -4,6 +4,7 @@ import logging
 import sys
 import datetime
 import os
+import shutil
 from pprint import pformat
 from getopt import getopt
 from wpexceptions import WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpBadResponseError, WpHTTPError, WpInvalidEndpointError
@@ -45,7 +46,7 @@ def main(argv):
             log.info("----Log Started----")
 
     try:
-
+        worldpay.validateConfiguration()  # Make sure our keys and ids are correct
         print '*' * 80
         enactFullScript()
         # enactTestScript()
@@ -67,6 +68,7 @@ def main(argv):
         destination = worldpay.errorLogDirectory + "/" + errorFileName
         if not os.path.isdir(worldpay.errorLogDirectory):  # if the directory doesn't exist, create it
             try:
+                # BUG! use os.makedirs insted for windows
                 os.mkdirs(worldpay.errorLogDirectory)
             except:
                 log.error("Could not create error log directory: %s", worldpay.errorLogDirectory)
@@ -75,6 +77,7 @@ def main(argv):
                 log.info("Created error log directory: %s", worldpay.errorLogDirectory)
 
         try:
+            # BUG! use copy of shutil for windows
             os.rename(worldpay.logFileName, destination)
         except:
             msg = "Could not rename log file to " + destination
@@ -92,23 +95,7 @@ def main(argv):
 
 
 def enactManualTransaction():
-    return doManualAuthTransaction(withCapture=True, verifyOnly=False)
-
-
-def enactInstallmentPaymentScript():
-    #
-    # This is used to help debug an individual transaction
-    # Available operations:
-
-    cid = doCreateCustomerAndPayment()  # Create a new customer and remember the cid for installment transactions
-    pid = doCreateInstallmentPaymentPlan(cid)  # Establish an installment payment Plan
-
-    # Something going wrong here. Disable until fixed
-    try:
-        doUpdateInstallmentPaymentPlan(cid, pid)  # Update an installment payment plan
-    except (WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpBadResponseError, WpJSONError, WpHTTPError, WpInvalidEndpointError) as e:
-        print(e.message)
-        sys.exit(1)
+    return doSearchTransactions()
 
 
 def enactFullScript():
@@ -215,12 +202,12 @@ def enactFullScript():
         # Close Batch
         batchId = doCloseBatch()  # close the current batch
 
-#        # Get Batch by Id
-#        try:
-#            batchId = doGetBatchById(batchId)
-#        except (WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpBadResponseError, WpJSONError, WpHTTPError) as e:
-#            print(e.message)
-#            sys.exit(1)
+        # Get Batch by Id
+        try:
+            batchId = doGetBatchById(batchId)
+        except (WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpBadResponseError, WpJSONError, WpHTTPError) as e:
+            print(e.message)
+            sys.exit(1)
 
         # Find all transactions in last 24 hours
         doSearchTransactions()  # Search for some transactions based on criteria set in the called function

@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)  # this allows the name of the current module 
 '''
 
 
-class Encryption:
+class Encryption(object):
     '''This is the encryption referenced in the main Authorizatoin Request Object'''
     def __init(self):
         log.debug("Encryption class:")
@@ -42,9 +42,9 @@ class AdditionalTerminalInfo(object):
     def __init__(self):
         log.debug("AdditionalTerminalInfo class:")
         self.terminalId = ""
-        self.terminalCity = "",
-        self.terminalState = "",
-        self.terminalLocation = "",
+        self.terminalCity = ""
+        self.terminalState = ""
+        self.terminalLocation = ""
         self.storeNumber = ""
 
     def serialize(self):
@@ -370,7 +370,7 @@ class MailOrTelephoneData(object):
 class ServiceData(object):
     '''This is the Tip object referenced in the main Authorization Request Object'''
     def __init__(self):
-        log.debug("BillAddress class:")
+        log.debug("ServiceData class:")
         self.gratuityAmount = 0.0
         self.server = ""
 
@@ -392,7 +392,7 @@ class ExtendedInformation(object):
         self.deviceCode = ""
         self.entrySource = ""
         self.notes = ""
-        self. invoiceNumber = ""
+        self.invoiceNumber = ""
         self.invoiceDescriptor = ""
         self.additionalTerminalInfo = {}  # serialized AdditionalTerminalInformation class
         self.levelTwoData = {}  # serialized LevelTwoData class
@@ -422,6 +422,7 @@ class ExtendedInformation(object):
 
     def attachAdditionalTerminalInfo(self, ati):
         ''' attach an AdditionalTerminalInfo to the current object. ati is the AdditionalTerminalInfo object'''
+        log.debug("before")
         self.additionalTerminalInfo = ati.serialize()
 
     def attachLevelTwoData(self, ltd):
@@ -524,6 +525,7 @@ class AuthorizationRequest(object):
 
     def attachExtendedInformation(self, ei):
         ''' attach an ExtendedInformation object to the this object. ei is the ExtendedInformation object'''
+        log.debug("ei.serialize")
         self.extendedInformation = ei.serialize()
 
     def attachEncryption(self, enc):

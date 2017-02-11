@@ -14,11 +14,12 @@
 import logging
 from pprint import pformat
 
-from wpauthobjects import AuthorizationRequest, PriorAuthCaptureRequest, Card, Address, PaymentVaultToken
+from wpauthobjects import AuthorizationRequest, PriorAuthCaptureRequest, Card, Address, PaymentVaultToken, ExtendedInformation, ServiceData
 from wpresponseobjects import AuthResponseParameters
 from wpexceptions import WpBadResponseError, WpInvalidFunctionCallError
 from wptotal import wpTransact
 from wptestcard import test
+# from beeprint import pp  # This is for an improved print debugger. You can pip install beeprint if you want or just remove the pp() statements
 
 log = logging.getLogger(__name__)  # this allows the name of the current module to be placed in the log entry
 
@@ -120,6 +121,7 @@ def baseAuthTransaction(withCapture=False, verifyOnly=False):
     '''
 
     # 1. Fill in the Request Object
+    # Fill in Address object
     address = Address()
     test.random()
     address.line1 = test.getAddress()
@@ -130,15 +132,19 @@ def baseAuthTransaction(withCapture=False, verifyOnly=False):
     address.company = test.getCompany()
     address.phone = test.getPhone()
 
+    # Fill in Card object
     card = Card()
     card.number = test.getCardPAN()
     card.cvv = test.getCVV()
     card.expirationDate = test.getExpirationDate()
-    card.attachAddress(address)  # attach the address object
 
+    # Fill in AuthorizationRequest object
     ar = AuthorizationRequest()
     ar.amount = test.getAmount()
-    ar.attachCard(card)  # attach the card object
+
+    # Build the full auth request object by attaching supporting objects
+    card.attachAddress(address)
+    ar.attachCard(card)
 
     if withCapture:  # we've overloaded this function as most of the code is the same for Charge, Auth, and verify
         operation = "Charge"
@@ -149,6 +155,7 @@ def baseAuthTransaction(withCapture=False, verifyOnly=False):
             operation = "Authorize"
 
     # 2. Send the transaction on a serialized Request Object
+    log.debug("Sending transaction\n")
     try:
         response = wpTransact(operation, ar.serialize())
     except:  # pass the exception up. Nothing to do here at the moment
@@ -190,7 +197,13 @@ def doManualAuthTransaction(withCapture=False, verifyOnly=False):
     '''
 
     # 1. Fill in the Request Object
+    # Create the objects being utilized
+    ar = AuthorizationRequest()
     address = Address()
+    card = Card()
+    sd = ServiceData()
+    ei = ExtendedInformation()
+
     address.line1 = "201 17th Street"
     address.city = "Atlanta"
     address.state = "GA"
@@ -199,14 +212,41 @@ def doManualAuthTransaction(withCapture=False, verifyOnly=False):
     address.company = "Wordplay"
     address.phone = "678.587.1836"
 
-    card = Card()
-    card.number = "5500000000000004"  # MC
-    card.cvv = "111"
-    card.expirationDate = "03/20"
-    card.attachAddress(address)  # attach the address object
+    card.trackData = "%B4444333322221111^SECURENET^20041015432112345678?;4444333322221111=20041015432112345678?"
+    #######################################
+    # % - sentinel code
+    # B - B type Track 1 data
+    # 4444333322221111 - pan
+    # ^SECURENET^ - name (23 chars or less) (^ are field seperators)
+    # 2004 - expiration date YYMM
+    # 101 - service code 1=International capable, 0=Normal Rules 1=no restructions
+    # 5432112345678? - Discretionary data
+    # ; - Track 2 data
+    # 4444333322221111 - PAN
+    # = - seperator
+    # 2004 - expiration date
+    # 101 - service code
+    # 5432112345678 - discretionary data
+    # ? - sentinal code
+    #######################################
+    # card.number = "5500000000000004"  # MC
+    # card.cvv = "111"
+    # card.expirationDate = "03/20"
 
-    ar = AuthorizationRequest()
-    ar.amount = 1
+    sd.gratuityAmount = 1.96
+    sd.server = "Joey"
+
+    ar.amount = 10.39
+
+    # Build the object relationships
+    log.debug("SD: %s\n", pformat(sd.serialize(), indent=1))
+    ei.attachServiceData(sd)
+    log.debug("EI: %s\n", pformat(ei.serialize(), indent=1))
+    ar.attachExtendedInformation(ei)
+
+    log.debug("Address: %s\n", pformat(address.serialize(), indent=1))
+    card.attachAddress(address)  # attach the address object
+    log.debug("Card: %s\n", pformat(card.serialize(), indent=1))
     ar.attachCard(card)  # attach the card object
 
     if withCapture:  # we've overloaded this function as most of the code is the same for Charge, Auth, and verify

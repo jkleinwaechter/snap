@@ -13,6 +13,13 @@ class Error(Exception):
     pass
 
 
+class WpConfigurationError(Error):  # use this when the program does not have the correct environment to begin
+    def __init__(self, m):
+        self.message = "Invalid configuration: " + m
+        print self.message
+        log.error(self.message)
+
+
 class WpInvalidFunctionCallError(Error):  # use this when a function call has invalid parameters
     def __init__(self, m):
         self.message = "Invalid function call: " + m
