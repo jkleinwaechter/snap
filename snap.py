@@ -4,6 +4,7 @@ import logging
 import sys
 import datetime
 import os
+import shutil
 from pprint import pformat
 from getopt import getopt
 from wpexceptions import WpTimeoutError, WpConnectionError, WpTooManyRedirectsError, WpJSONError, WpBadResponseError, WpHTTPError, WpInvalidEndpointError
@@ -67,7 +68,7 @@ def main(argv):
         destination = worldpay.errorLogDirectory + "/" + errorFileName
         if not os.path.isdir(worldpay.errorLogDirectory):  # if the directory doesn't exist, create it
             try:
-                os.mkdirs(worldpay.errorLogDirectory)
+                os.makedirs(worldpay.errorLogDirectory)
             except:
                 log.error("Could not create error log directory: %s", worldpay.errorLogDirectory)
                 destination = errorFileName  # just rename and leave it in this directory
@@ -75,13 +76,14 @@ def main(argv):
                 log.info("Created error log directory: %s", worldpay.errorLogDirectory)
 
         try:
-            os.rename(worldpay.logFileName, destination)
+            shutil.copy(worldpay.logFileName, destination)
         except:
             msg = "Could not rename log file to " + destination
             log.error(msg)
         else:
             msg = "Copied log to " + destination
             log.info(msg)
+            #os.remove(worldpay.logFileName) # Windows file-handling sucks
 
         print(msg)
 
