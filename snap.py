@@ -68,8 +68,7 @@ def main(argv):
         destination = worldpay.errorLogDirectory + "/" + errorFileName
         if not os.path.isdir(worldpay.errorLogDirectory):  # if the directory doesn't exist, create it
             try:
-                # BUG! use os.makedirs insted for windows
-                os.mkdirs(worldpay.errorLogDirectory)
+                os.makedirs(worldpay.errorLogDirectory)
             except:
                 log.error("Could not create error log directory: %s", worldpay.errorLogDirectory)
                 destination = errorFileName  # just rename and leave it in this directory
@@ -78,7 +77,7 @@ def main(argv):
 
         try:
             # BUG! use copy of shutil for windows
-            os.rename(worldpay.logFileName, destination)
+            shutil.copy(worldpay.logFileName, destination)
         except:
             msg = "Could not rename log file to " + destination
             log.error(msg)
